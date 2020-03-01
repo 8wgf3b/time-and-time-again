@@ -128,3 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 configs/*.yml
+data/*
+!data/.gitkeep
