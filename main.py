@@ -1,8 +1,9 @@
-from ingestion.post_snaps import RedditSnap
+from ingestion.post_snaps import RedditSnap, RedditLogin
 import asyncio
 
 async def save_snaps():
-    x = RedditSnap('configs/login_cred.yml', 'configs/test0.yml')
+    reddit = RedditLogin('configs/login_cred.yml')
+    x = RedditSnap(reddit, 'configs/test0.yml')
     await x.initiate()
     await x.update()
 
