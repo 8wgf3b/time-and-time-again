@@ -130,4 +130,4 @@ dmypy.json
 *.yml
 data/*
 !data/.gitkeep
-temps/*
+temp/*
