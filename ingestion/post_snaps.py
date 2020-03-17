@@ -1,14 +1,15 @@
 import aiohttp
 import asyncio
-import os
 import yaml
 from tqdm import tqdm
-import pandas as pd
 import praw
 from aioinflux import *
 from typing import NamedTuple
 from pprint import pprint
+import logging
 
+
+logger = logging.getLogger('TS.postsnaps')
 
 @lineprotocol
 class PostSnaps(NamedTuple):
@@ -30,8 +31,9 @@ class RedditSnap:
         with open(store_conf, 'r') as stream:
             config = yaml.safe_load(stream)
         self.subreddit = config['subreddit']
-        self.limit = config['initial_limit']
         self.client = InfluxDBClient(db='PostSnaps')
+        self.init_delay = config['init_delay']
+        self.update_delay = config['update_delay']
 
     async def subreddit_post_snaps(self):
         subreddit = self.reddit.subreddit(self.subreddit)
@@ -49,13 +51,17 @@ class RedditSnap:
                 await self.write(post)
             except TypeError:
                 print(f'TE {post.subreddit.display_name}: {post.id}')
+            except prawcore.exceptions.ServerError as e:
+                print(e)
+                await asyncio.sleep(30)
+                await self.write(post)
 
     async def get_latest_posts(self, after=None, limit=1000):
         sub_url = 'https://api.pushshift.io/reddit/submission/search'
         params = {'limit': limit, 'fields': 'id'}
         sub = self.subreddit
         if sub != 'all':
-            params['sub'] = sub
+            params['subreddit'] = sub
         if after:
             params['after'] = after
         else:
@@ -63,15 +69,23 @@ class RedditSnap:
         async with aiohttp.ClientSession() as session:
             async with session.get(sub_url, params=params) as r:
                 data = (await r.json())['data']
+        logger.info(f'{len(data)} entries')
         for i in range(0, len(data), 100):
             yield [f"t3_{i['id']}" for i in data[i: i + 100]]
 
     async def write(self, post):
-        row = PostSnaps(post.subreddit.display_name, post.id, post.num_comments,
-                      post.score, post.upvote_ratio)
+        try:
+            row = PostSnaps(post.subreddit.display_name, post.id, post.num_comments,
+                            post.score, post.upvote_ratio)
+        except prawcore.exceptions.ServerError as e:
+            logger.exception(f'{post}')
+            await asyncio.sleep(30)
+            await self.write(post)
         await self.client.write(row)
 
+
     async def initiate(self):
+        logger.info(f'initiating {self.subreddit}...')
         qs = f"""
 SELECT last(uv_r), id
 FROM PostSnaps
@@ -81,14 +95,19 @@ WHERE sub='{self.subreddit}'"""
             after = str(results['results'][0]['series'][0]['values'][0][0])
         except KeyError:
             after = None
-        async for chonk in self.get_latest_posts(after=after):
-            await self.save_posts_by_id(chonk)
+        try:
+            async for chonk in self.get_latest_posts(after=after):
+                await self.save_posts_by_id(chonk)
+            logger.info(f'initiated {self.subreddit}!')
+        except Exception:
+            logger.exception('Failed fetching from pushshift :(')
 
     async def update(self):
+        logger.info(f'Updating {self.subreddit}...')
         qs = f"""
 SELECT uv_r, id
 FROM PostSnaps
-WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - 30m"""
+WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.update_delay + 3}m"""
         results = await self.client.query(qs, chunked=True, chunk_size=100)
         async for result in results:
             try:
@@ -96,7 +115,8 @@ WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - 30m"""
                 ids = [f't3_{i[2]}' for i in values]
                 await self.save_posts_by_id(ids)
             except KeyError:
-                pprint(result)
+                logger.exception(result)
+        logger.info(f'Updated {self.subreddit}!')
 
 '''
 def gap_ensurer(gap):
