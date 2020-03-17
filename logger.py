@@ -48,7 +48,7 @@ stream_handler.setLevel(logging.INFO)
 with open('configs/mail_params.yml', 'r') as stream:
     mail_params = yaml.safe_load(stream)
 
-email_handler = EmailTRFH(mail_params, 'temp/temp.log', when="m", interval=30, backupCount=5)
+email_handler = EmailTRFH(mail_params, 'temp/temp.log', when="h", interval=3, backupCount=5)
 email_handler.setFormatter(formatter)
 email_handler.setLevel(logging.WARNING)
 

@@ -58,7 +58,7 @@ class RedditSnap:
             except TypeError:
                 print(f'TE {post.subreddit.display_name}: {post.id}')
             except prawcore.exceptions.ServerError as e:
-                print(e)
+                logger.warning(f'{e} - {post}')
                 await asyncio.sleep(30)
                 await self.write(post)
 
@@ -84,7 +84,7 @@ class RedditSnap:
             row = PostSnaps(post.subreddit.display_name, post.id, post.num_comments,
                             post.score, post.upvote_ratio)
         except prawcore.exceptions.ServerError as e:
-            logger.exception(f'{post}')
+            logger.warning(f'{e} - {post}')
             await asyncio.sleep(30)
             await self.write(post)
         await self.client.write(row)
@@ -121,7 +121,7 @@ WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.upda
                 ids = [f't3_{i[2]}' for i in values]
                 await self.save_posts_by_id(ids)
             except KeyError:
-                logger.exception('No older entries?!')
+                logger.warning('No older entries?!')
         logger.info(f'Updated {self.subreddit}!')
 
 '''

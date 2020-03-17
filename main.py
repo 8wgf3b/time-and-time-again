@@ -22,4 +22,4 @@ if __name__ == '__main__':
         loop.run_until_complete(init_db())
         loop.run_forever()
     except (KeyboardInterrupt, SystemExit):
-        logger.exception('Closing program...')
+        logger.warning('Closing program...')
