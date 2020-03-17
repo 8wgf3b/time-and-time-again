@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import yaml
-from tqdm import tqdm
 import praw
 from aioinflux import *
 from typing import NamedTuple
@@ -10,6 +9,13 @@ import logging
 
 
 logger = logging.getLogger('TS.postsnaps')
+
+
+async def init_db():
+    async with InfluxDBClient(db='PostSnaps') as client:
+        await client.create_database(db='PostSnaps')
+    logger.info("Creating database if it ain't")
+
 
 @lineprotocol
 class PostSnaps(NamedTuple):
@@ -107,7 +113,7 @@ WHERE sub='{self.subreddit}'"""
         qs = f"""
 SELECT uv_r, id
 FROM PostSnaps
-WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.update_delay + 3}m"""
+WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.update_delay - 5}m"""
         results = await self.client.query(qs, chunked=True, chunk_size=100)
         async for result in results:
             try:
@@ -115,7 +121,7 @@ WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.upda
                 ids = [f't3_{i[2]}' for i in values]
                 await self.save_posts_by_id(ids)
             except KeyError:
-                logger.exception(result)
+                logger.exception('No older entries?!')
         logger.info(f'Updated {self.subreddit}!')
 
 '''
@@ -138,9 +144,3 @@ def gap_ensurer(gap):
 def add(a, b):
     return a + b
 '''
-
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    print(loop.run_until_complete(add(1, 2)))
-    loop.close()
