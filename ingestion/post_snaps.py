@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import yaml
-import praw
+import praw, prawcore
 from aioinflux import *
 from typing import NamedTuple
 from pprint import pprint
@@ -75,13 +75,13 @@ class RedditSnap:
         async with aiohttp.ClientSession() as session:
             async with session.get(sub_url, params=params) as r:
                 data = (await r.json())['data']
-        logger.info(f'{len(data)} entries')
+        logger.info(f'fetched {len(data)} entries from pushshift')
         for i in range(0, len(data), 100):
             yield [f"t3_{i['id']}" for i in data[i: i + 100]]
 
     async def write(self, post):
         try:
-            row = PostSnaps(post.subreddit.display_name, post.id, post.num_comments,
+            row = PostSnaps(self.subreddit, post.id, post.num_comments,
                             post.score, post.upvote_ratio)
         except prawcore.exceptions.ServerError as e:
             logger.warning(f'{e} - {post}')
@@ -91,7 +91,6 @@ class RedditSnap:
 
 
     async def initiate(self):
-        logger.info(f'initiating {self.subreddit}...')
         qs = f"""
 SELECT last(uv_r), id
 FROM PostSnaps
@@ -102,14 +101,14 @@ WHERE sub='{self.subreddit}'"""
         except KeyError:
             after = None
         try:
-            async for chonk in self.get_latest_posts(after=after):
-                await self.save_posts_by_id(chonk)
-            logger.info(f'initiated {self.subreddit}!')
+            async for ids in self.get_latest_posts(after=after):
+                logger.info(f'initiating {len(ids)} entries: {self.subreddit}')
+                await self.save_posts_by_id(ids)
+                logger.info(f'initiated {len(ids)} entries: {self.subreddit}')
         except Exception:
             logger.exception('Failed fetching from pushshift :(')
 
     async def update(self):
-        logger.info(f'Updating {self.subreddit}...')
         qs = f"""
 SELECT uv_r, id
 FROM PostSnaps
@@ -118,11 +117,13 @@ WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.upda
         async for result in results:
             try:
                 values = result['results'][0]['series'][0]['values']
-                ids = [f't3_{i[2]}' for i in values]
+                ids = set(i[2] for i in values)
+                ids = [f't3_{i}' for i in ids]
+                logger.info(f'updating {len(ids)} entries: {self.subreddit}')
                 await self.save_posts_by_id(ids)
+                logger.info(f'updated {len(ids)} entries: {self.subreddit}')
             except KeyError:
-                logger.warning('No older entries?!')
-        logger.info(f'Updated {self.subreddit}!')
+                logger.warning(f'No older entries?!: {self.subreddit}')
 
 '''
 def gap_ensurer(gap):

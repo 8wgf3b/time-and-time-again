@@ -12,8 +12,8 @@ if __name__ == '__main__':
     logger.debug('Loaded reddit credentials')
     for conf in glob('configs/PS_configs/*.yml'):
         x = RedditSnap(reddit, conf)
-        scheduler.add_job(x.initiate, 'interval', minutes=x.init_delay)
-        scheduler.add_job(x.update, 'interval', minutes=x.update_delay)
+        scheduler.add_job(x.initiate, 'interval', minutes=x.init_delay, misfire_grace_time=120)
+        scheduler.add_job(x.update, 'interval', minutes=x.update_delay, misfire_grace_time=120)
         logger.info(f'Added {x.subreddit} to scheduler')
     scheduler.start()
     logger.info('started the scheduler')
