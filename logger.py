@@ -37,7 +37,7 @@ logger = logging.getLogger('TS')
 logger.setLevel(logging.WARNING)
 
 formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(funcName)s: %(message)s')
-file_handler = logging.FileHandler(f'logs/{today().strftime("%d-%m-%Y")}.log')
+file_handler = logging.handlers.TimedRotatingFileHandler(f'logs/log', when='midnight')
 file_handler.setFormatter(formatter)
 file_handler.setLevel(logging.INFO)
 
