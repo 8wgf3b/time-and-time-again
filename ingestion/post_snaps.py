@@ -1,8 +1,10 @@
 import aiohttp
 import asyncio
+import csv
 import yaml
 import praw, prawcore
 from aioinflux import *
+from tqdm import tqdm
 from typing import NamedTuple
 from pprint import pprint
 import logging
@@ -125,23 +127,36 @@ WHERE sub='{self.subreddit}' and time > now() - 1d and time < now() - {self.upda
             except KeyError:
                 logger.warning(f'No older entries?!: {self.subreddit}')
 
-'''
-def gap_ensurer(gap):
-    def wrap(func):
-        async def wrapper(*args, **kwargs):
-            start = time.time()
-            result = func(*args, **kwargs)
-            end = time.time()
-            diff = gap - end + start
-            diff = max(0, diff)
-            print(diff)
-            await asyncio.sleep(diff)
-            return result
-        return wrapper
-    return wrap
+
+async def idb_to_csv(sub, dest):
+    count_query = f"""
+SELECT count(score)
+FROM PostSnaps
+where sub='{sub}'"""
+    data_query = f"""
+SELECT *
+FROM PostSnaps
+where sub='{sub}'"""
+    try:
+        async with InfluxDBClient(db='PostSnaps') as client:
+            results = await client.query(count_query)
+            count = results['results'][0]['series'][0]['values'][0][1]
+            results = await client.query(data_query, chunked=True, chunk_size=100)
+            bar = tqdm(total=count)
+            with open(dest, "w", newline="") as f:
+                writer = csv.writer(f)
+                async for result in results:
+                    try:
+                        values = result['results'][0]['series'][0]['values']
+                        writer.writerows(values)
+                        bar.update(len(values))
+                    except KeyError:
+                        continue
+            bar.close()
+    except KeyError:
+        logger.warning(f'No entries for this {sub}')
 
 
-@gap_ensurer(1)
-def add(a, b):
-    return a + b
-'''
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(idb_to_csv('askreddit', 'data/askreddit.csv'))
