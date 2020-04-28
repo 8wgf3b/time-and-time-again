@@ -13,10 +13,10 @@ import logging
 logger = logging.getLogger('TS.postsnaps')
 
 
-async def init_db():
-    async with InfluxDBClient(db='PostSnaps') as client:
-        await client.create_database(db='PostSnaps')
-    logger.info("Creating database if it ain't")
+async def init_db(db):
+    async with InfluxDBClient(db=db) as client:
+        await client.create_database(db=db)
+    logger.info(f"Creating {db} database if it ain't")
 
 
 @lineprotocol

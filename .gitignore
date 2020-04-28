@@ -132,3 +132,4 @@ data/*
 !data/.gitkeep
 temp/*
 *.csv
+logs/*
