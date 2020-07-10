@@ -12,7 +12,7 @@ with open('configs/dashurl.yml', 'r') as stream:
     urls = yaml.safe_load(stream)
     
 dropdown = dbc.DropdownMenu(nav=True, label='Go to', in_navbar=True,
-           children=[dbc.DropdownMenuItem(v, href= k) for k, v in urls.items()])
+           children=[dbc.DropdownMenuItem(' '.join(v.split('_')).title(), href= k) for k, v in urls.items()])
 
 navbar = dbc.NavbarSimple(brand='Time and time again ....', dark=True, color='primary',
                           children=[dropdown])
@@ -28,10 +28,8 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname in urls:
-        return globals()[urls[pathname]].layout
-    else:
-        return 404
+    return globals()[urls[pathname]].layout if pathname in urls else 404
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0')
