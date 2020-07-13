@@ -6,14 +6,21 @@ from datetime import datetime
 from .app import app
 
 
-delta = (datetime(2020, 12, 31).date() - datetime.now().date()).days
-
-percent = round(100 * (182 - delta)/ 182)
-
-progress = dbc.Progress(f'{percent}%', id='progress', value=percent, style={"height": "50px"})
+progress = dbc.Progress(id='progress', style={"height": "50px"})
 
 layout = dbc.Container([dbc.Row(dbc.Col(html.H1('COUNTDOWN', className="text-center"))),
                         progress,
-                        dbc.Row(dbc.Col(html.H2(f'Only {delta} days remaining!!', id='time-left', className="text-center")))])
+                        dbc.Row(dbc.Col(html.H2(id='time-left', className="text-center"))),
+                        dcc.Interval(
+            id='hourly-update',
+            interval=3600*1000, # in milliseconds
+            n_intervals=0
+        )])
 
 
+@app.callback([Output('time-left', 'children'), Output('progress', 'children'), Output('progress', 'value')],
+              [Input('hourly-update', 'n_intervals')])
+def update_progress(n):
+    delta = (datetime(2020, 12, 31).date() - datetime.now().date()).days
+    percent = round(100 * (182 - delta)/ 182)
+    return f'Only {delta} days remaining!!', f'{percent}%', percent               
