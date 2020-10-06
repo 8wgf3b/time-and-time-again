@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
 from dash_apps.app import app
-from dash_apps import home
+from dash_apps import home, set_countdowns
 import yaml
 
 

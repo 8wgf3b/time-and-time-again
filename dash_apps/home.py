@@ -11,11 +11,8 @@ progress = dbc.Progress(id='progress', style={"height": "50px"})
 layout = dbc.Container([dbc.Row(dbc.Col(html.H1('COUNTDOWN', className="text-center"))),
                         progress,
                         dbc.Row(dbc.Col(html.H2(id='time-left', className="text-center"))),
-                        dcc.Interval(
-            id='hourly-update',
-            interval=3600*1000, # in milliseconds
-            n_intervals=0
-        )])
+                        dcc.Interval(id='hourly-update', interval=3600*1000, n_intervals=0)
+                        ])
 
 
 @app.callback([Output('time-left', 'children'), Output('progress', 'children'), Output('progress', 'value')],
