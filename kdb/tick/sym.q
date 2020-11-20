@@ -1,1 +1,1 @@
-discord: flip `date`time`member`channel`message ! "dtss*"$\:()
+discord: flip `time`sym`date`channel`message ! "nsds*"$\:()
