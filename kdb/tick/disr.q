@@ -12,6 +12,7 @@ upd:{if[not `discord=x;:()];`discord insert y}
 
 / end of day: save, clear, hdb reload
 .u.end:{};
+eod: {.Q.hdpf[`::5012; `:../data/hdb/; x; `time]}
 
 / init schema and sync up from log file;cd to hdb(so client save can run)
 .u.rep:{(.[;();:;].) x;if[null first y;:()];-11!y;};
