@@ -15,7 +15,7 @@ msg: {if[x <= lvl; h " " sv hdr[], (y; $[10h = type z; z; -3!z])]}
 
 
 err: msg[0; "[E]"]
-wrn: msg[0; "[W]"]
-inf: msg[0; "[I]"]
-dbg: msg[0; "[D]"]
-trc: msg[0; "[T]"]
+wrn: msg[1; "[W]"]
+inf: msg[2; "[I]"]
+dbg: msg[3; "[D]"]
+trc: msg[4; "[T]"]
