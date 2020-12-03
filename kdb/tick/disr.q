@@ -12,6 +12,7 @@ offdt: {`date$y + x}[D05:30]
 fill: {
     -11! ` sv `:../data/tplogs, `$ "discord", string x;
     delete from `discord where date <> offdt .z.p;
+    `time xasc `discord;
     }
 
 / get the ticker plant and history ports, defaults are 5010,5012
@@ -26,5 +27,5 @@ eod: {.Q.hdpf[`::5012; `:../data/hdb/; x; `time]}
 / HARDCODE \cd if other than logdir/db
 
 / connect to ticker plant for (schema;(logcount;log))
-.u.rep .(hopen `$":",.u.x 0)".u.sub[`discord;`]";
+.u.rep @ (hopen `$":",.u.x 0)".u.sub[`discord;`]";
 
