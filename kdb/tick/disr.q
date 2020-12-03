@@ -7,6 +7,13 @@ tbloc: hsym `$ "../data/hdb/discord/"
 
 upd:{if[not `discord=x;:()];`discord insert y}
 
+offdt: {`date$y + x}[D05:30] 
+
+fill: {
+    -11! ` sv `:../data/tplogs, `$ "discord", string x;
+    delete from `discord where date <> offdt .z.p;
+    }
+
 / get the ticker plant and history ports, defaults are 5010,5012
 .u.x:.z.x,(count .z.x)_(":5010";":5012");
 
@@ -15,9 +22,9 @@ upd:{if[not `discord=x;:()];`discord insert y}
 eod: {.Q.hdpf[`::5012; `:../data/hdb/; x; `time]}
 
 / init schema and sync up from log file;cd to hdb(so client save can run)
-.u.rep:{(.[;();:;].) x;if[null first y;:()];-11!y;};
+.u.rep:{(.[;();:;].) x; @[fill;;::] @/: offdt[.z.p] - til 2};
 / HARDCODE \cd if other than logdir/db
 
 / connect to ticker plant for (schema;(logcount;log))
-.u.rep .(hopen `$":",.u.x 0)"(.u.sub[`discord;`];`.u `i`L)";
+.u.rep .(hopen `$":",.u.x 0)".u.sub[`discord;`]";
 
