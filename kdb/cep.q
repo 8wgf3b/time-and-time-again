@@ -5,7 +5,7 @@
 \l utils/prof.q
 \l timer/timer.q
 \l timer/tickside.q
-
+\l timer/parsemobile.q
 
 c: .opt.config
 c,: (`t; 100; "set timer")
@@ -21,7 +21,7 @@ newhdl: {[folder;tm]
 
 main: {[p]
     .timer.add[`timer.job; `newlog; newhdl[p`lloc]; dailyonce 0D00:00]
-    .timer.add[`timer.job] .' tickside.jobs;
+    .timer.add[`timer.job] . (`phonestats; savephonestats; .z.p);
     }
 
 p: .opt.getopt[c; `lloc] .z.x
